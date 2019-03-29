@@ -1,5 +1,8 @@
 import os
 
 def read_packages():
-	files = os.listdir('/var/cache/alps/scripts')
+	with open('/var/cache/alps/packages.json') as fp:
+		return json.load(fp)
+
+
 	
