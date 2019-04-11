@@ -6,7 +6,7 @@ class Categories(Gtk.VBox):
 		Gtk.VBox.__init__(self)
 		self.context = context
 
-		self.categories_list = ['All', 'Miscellaneous', 'Internet and Network', 'Desktop Environment', 'Image, Audio and Video', '']
+		self.categories_list = ['All', 'Miscellaneous', 'Internet and Network', 'Desktop Environment', 'Image, Audio and Video']
 
 		self.categories = Gtk.ListBox()
 		self.categories.set_selection_mode(Gtk.SelectionMode.SINGLE)
