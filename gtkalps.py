@@ -5,6 +5,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
 
+import flatpaklist
 import packagelist
 import categories
 import misc
@@ -19,10 +20,13 @@ class GtkAlps(Gtk.Window):
 		self.add(self.paned)
 
 		self.packages = misc.load_packages()
+		self.flatpaks = misc.get_all_packages()
+		for p in self.flatpaks:
+			p['status'] = False
 		context['packages'] = self.packages
-		self.package_list = packagelist.PackageList(context)
+		self.package_list = flatpaklist.FlatpakList(context)
 		self.package_list.clear()
-		for package in self.packages:
+		for package in self.flatpaks:
 			self.package_list.add_package(package)
 		self.category_list = categories.Categories(context)
 		self.paned.add1(self.category_list)
