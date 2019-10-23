@@ -5,30 +5,42 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
 
+import json
+
 import flatpaklist
 import packagelist
 import categories
 import misc
+import description
 
 class GtkAlps(Gtk.Window):
 	def __init__(self):
 		Gtk.Window.__init__(self, title='Aryalinux Package Manager')
 		context = dict()
 
+		with open('categories.json') as fp:
+			self.categories = json.load(fp)
+
+		self.root_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
+		self.root_paned.set_position(500)
 		self.paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 		self.paned.set_position(250)
-		self.add(self.paned)
+		self.root_paned.add1(self.paned)
+		self.root_paned.add2(description.Description())
+		self.add(self.root_paned)
 
 		self.packages = misc.load_packages()
 		self.flatpaks = misc.get_all_packages()
 		for p in self.flatpaks:
 			p['status'] = False
+			if None != p['currentReleaseDate']:
+				p['currentReleaseDate'] = p['currentReleaseDate'][:p['currentReleaseDate'].index('T')]
 		context['packages'] = self.packages
 		self.package_list = flatpaklist.FlatpakList(context)
 		self.package_list.clear()
 		for package in self.flatpaks:
 			self.package_list.add_package(package)
-		self.category_list = categories.Categories(context)
+		self.category_list = categories.Categories(context, self.categories, self.on_category_change)
 		self.paned.add1(self.category_list)
 		scrolled_window = Gtk.ScrolledWindow()
 		scrolled_window.add(self.package_list)
@@ -39,6 +51,20 @@ class GtkAlps(Gtk.Window):
 		screen = Gdk.Screen.get_default()
 		self.set_size_request(screen.get_width()*0.75, screen.get_height()*0.75)
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+
+	def on_category_change(self, source, event):
+		selection = self.category_list.get_selection()
+		category = self.categories[selection.data]
+		if category == 'all':
+			pkgs = misc.get_all_packages()
+		else:
+			pkgs = misc.get_packages_by_category(category)
+		self.package_list.clear()
+		for package in pkgs:
+			package['status'] = False
+			if None != package['currentReleaseDate']:
+				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
+			self.package_list.add_package(package)
 
 app = GtkAlps()
 app.connect('destroy', Gtk.main_quit)
