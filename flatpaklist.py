@@ -9,7 +9,7 @@ class FlatpakList(Gtk.TreeView):
 		Gtk.TreeView.__init__(self)
 		self.context = context
 
-		self.package_store = Gtk.ListStore(bool, str, str, str, str, bool)
+		self.package_store = Gtk.ListStore(bool, str, str, str, str)
 
 		self.set_model(self.package_store)
 
@@ -22,7 +22,6 @@ class FlatpakList(Gtk.TreeView):
 				renderer.set_property('activatable', True)
 				renderer.connect("toggled", self.on_toggle, self.package_store)
 				column = Gtk.TreeViewColumn(title, renderer, active=0)
-				column.add_attribute(renderer, 'activatable', 6)
 			self.append_column(column)
 		self.set_hexpand(True)
 		self.set_vexpand(True)
@@ -36,8 +35,8 @@ class FlatpakList(Gtk.TreeView):
 				package['name'],
 				package['currentReleaseVersion'] if 'currentReleaseVersion' in package else '',
 				package['currentReleaseDate'] if 'currentReleaseDate' in package else '',
-				package['summary'] if 'summary' in package else '',
-				not package['status']
+				package['summary'] if 'summary' in package else ''#,
+				#not package['status']
 		]
 		self.package_store.append(row_data)
 
