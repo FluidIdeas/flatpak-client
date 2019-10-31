@@ -2,25 +2,21 @@ import os
 import json
 import requests
 
-def load_packages():
-	with open('/var/cache/alps/packages.json') as fp:
-		return sorted(json.load(fp), key = lambda i: i['name'])
-
 def get_all_packages():
 	url = 'https://flathub.org/api/v1/apps'
-	r = requests.get(url = url)
+	r = requests.get(url = url, verify=False)
 	packages = r.json()
 	return packages
 
 def get_packages_by_category(category):
 	url = 'https://flathub.org/api/v1/apps/category/'
-	r = requests.get(url = url + category)
+	r = requests.get(url = url + category, verify=False)
 	packages = r.json()
 	return packages
 
 def get_package_details(package_id):
 	url = 'https://flathub.org/api/v1/apps'
-	r = requests.get(url = url + '/' + package_id)
+	r = requests.get(url = url + '/' + package_id, verify=False)
 	package = r.json()
 	return package
 

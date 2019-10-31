@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -21,36 +21,36 @@ class GtkAlps(Gtk.Window):
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
 
-		self.root_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
-		self.root_paned.set_position(500)
-		self.paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
-		self.paned.set_position(250)
-		self.root_paned.add1(self.paned)
-		self.root_paned.add2(description.Description())
+		self.root_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+		self.internal_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
 		self.add(self.root_paned)
 
-		self.packages = misc.load_packages()
 		self.flatpaks = misc.get_all_packages()
 		for p in self.flatpaks:
 			p['status'] = False
 			if None != p['currentReleaseDate']:
 				p['currentReleaseDate'] = p['currentReleaseDate'][:p['currentReleaseDate'].index('T')]
-		context['packages'] = self.packages
+		context['packages'] = self.flatpaks
 		self.package_list = flatpaklist.FlatpakList(context)
 		self.package_list.clear()
 		for package in self.flatpaks:
 			self.package_list.add_package(package)
 		self.category_list = categories.Categories(context, self.categories, self.on_category_change)
-		self.paned.add1(self.category_list)
 		scrolled_window = Gtk.ScrolledWindow()
 		scrolled_window.add(self.package_list)
 		scrolled_window.set_hexpand(True)
 		scrolled_window.set_vexpand(True)
-		self.paned.add2(scrolled_window)
+
+		self.root_paned.add1(self.category_list)
+		self.root_paned.add2(self.internal_paned)
+		self.internal_paned.add1(scrolled_window)
+		self.internal_paned.add2(description.Description())
 
 		screen = Gdk.Screen.get_default()
 		self.set_size_request(screen.get_width()*0.75, screen.get_height()*0.75)
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+		self.root_paned.set_position(screen.get_width()*0.75*0.25)
+		self.internal_paned.set_position(screen.get_height()*0.75*0.55)
 
 	def on_category_change(self, source, event):
 		selection = self.category_list.get_selection()
