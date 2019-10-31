@@ -46,8 +46,8 @@ class GtkAlps(Gtk.Window):
 		self.internal_paned.add1(scrolled_window)
 		self.internal_paned.add2(description.Description())
 
-		screen = Gdk.Screen.get_default()
-		self.set_size_request(screen.get_width()*0.75, screen.get_height()*0.75)
+		(width, height) = self.get_screen_size()
+		self.set_size_request(width*0.75, height*0.75)
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 		self.root_paned.set_position(screen.get_width()*0.75*0.25)
 		self.internal_paned.set_position(screen.get_height()*0.75*0.55)
@@ -65,6 +65,14 @@ class GtkAlps(Gtk.Window):
 			if None != package['currentReleaseDate']:
 				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
 			self.package_list.add_package(package)
+
+	def get_screen_size(self):
+		display = Gdk.Display.get_default()
+		monitor = display.get_primary_monitor()
+		geometry = monitor.get_geometry()
+		width = geometry.width
+		height = geometry.height
+		return (width, height)
 
 app = GtkAlps()
 app.connect('destroy', Gtk.main_quit)
