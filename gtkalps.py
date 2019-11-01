@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -6,6 +6,7 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 
 import json
+import os.path
 
 import flatpaklist
 import packagelist
@@ -20,12 +21,13 @@ class GtkAlps(Gtk.Window):
 
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
+		
+		self.flatpaks = misc.get_all_packages()
 
 		self.root_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 		self.internal_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
 		self.add(self.root_paned)
 
-		self.flatpaks = misc.get_all_packages()
 		for p in self.flatpaks:
 			p['status'] = False
 			if None != p['currentReleaseDate']:
@@ -49,8 +51,8 @@ class GtkAlps(Gtk.Window):
 		(width, height) = self.get_screen_size()
 		self.set_size_request(width*0.75, height*0.75)
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
-		self.root_paned.set_position(screen.get_width()*0.75*0.25)
-		self.internal_paned.set_position(screen.get_height()*0.75*0.55)
+		self.root_paned.set_position(width*0.75*0.25)
+		self.internal_paned.set_position(height*0.75*0.55)
 
 	def on_category_change(self, source, event):
 		selection = self.category_list.get_selection()

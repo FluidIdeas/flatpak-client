@@ -1,22 +1,35 @@
 import os
+import os.path
 import json
 import requests
 
 def get_all_packages():
-	url = 'https://flathub.org/api/v1/apps'
-	r = requests.get(url = url, verify=False)
-	packages = r.json()
+	if not os.path.exists('repository/all_packages.json'):
+		url = 'https://flathub.org/api/v1/apps'
+		r = requests.get(url = url, verify=True)
+		packages = r.json()
+		with open('repository/all_packages.json', 'w') as fp:
+			json.dump(packages, fp)
+	else:
+		with open('repository/all_packages.json', 'r') as fp:
+			packages = json.load(fp)
 	return packages
 
 def get_packages_by_category(category):
-	url = 'https://flathub.org/api/v1/apps/category/'
-	r = requests.get(url = url + category, verify=False)
-	packages = r.json()
+	if not os.path.exists('repository/' + category + '_packages.json'):
+		url = 'https://flathub.org/api/v1/apps/category/'
+		r = requests.get(url = url + category, verify=True)
+		packages = r.json()
+		with open('repository/' + category + '_packages.json', 'w') as fp:
+			json.dump(packages, fp)
+	else:
+		with open('repository/' + category + '_packages.json', 'r') as fp:
+			packages = json.load(fp)
 	return packages
 
 def get_package_details(package_id):
 	url = 'https://flathub.org/api/v1/apps'
-	r = requests.get(url = url + '/' + package_id, verify=False)
+	r = requests.get(url = url + '/' + package_id, verify=True)
 	package = r.json()
 	return package
 
