@@ -34,6 +34,9 @@ class GtkAlps(Gtk.Window):
 				p['currentReleaseDate'] = p['currentReleaseDate'][:p['currentReleaseDate'].index('T')]
 		context['packages'] = self.flatpaks
 		self.package_list = flatpaklist.FlatpakList(context)
+		self.description = description.Description(context)
+		self.scroller1 = Gtk.ScrolledWindow()
+		self.scroller1.add(self.description)
 		self.package_list.clear()
 		for package in self.flatpaks:
 			self.package_list.add_package(package)
@@ -46,7 +49,7 @@ class GtkAlps(Gtk.Window):
 		self.root_paned.add1(self.category_list)
 		self.root_paned.add2(self.internal_paned)
 		self.internal_paned.add1(scrolled_window)
-		self.internal_paned.add2(description.Description())
+		self.internal_paned.add2(self.scroller1)
 
 		(width, height) = self.get_screen_size()
 		self.set_size_request(width*0.75, height*0.75)
