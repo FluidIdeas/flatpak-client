@@ -39,11 +39,6 @@ class FlatpakList(Gtk.TreeView):
 	def clear(self):
 		self.package_store.clear()
 
-	def on_toggle(self, cell, path, model):
-		if path is not None:
-			it = model.get_iter(path)
-			model[it][0] = not model[it][0]
-
 	def onRowSelection(self, source, index, column):
 		for i, row in enumerate(self.package_store):
 			if i == int(str(index)):

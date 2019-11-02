@@ -9,7 +9,6 @@ import json
 import os.path
 
 import flatpaklist
-import packagelist
 import categories
 import misc
 import description
@@ -70,6 +69,8 @@ class GtkAlps(Gtk.Window):
 			if None != package['currentReleaseDate']:
 				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
 			self.package_list.add_package(package)
+		self.package_list.set_cursor(0)
+		self.package_list.onRowSelection(None, 0, None)
 
 	def get_screen_size(self):
 		display = Gdk.Display.get_default()
