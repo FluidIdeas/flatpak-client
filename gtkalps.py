@@ -17,6 +17,7 @@ class GtkAlps(Gtk.Window):
 	def __init__(self):
 		Gtk.Window.__init__(self, title='Aryalinux Package Manager')
 		context = dict()
+		self.vbox = Gtk.VBox()
 
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
@@ -25,7 +26,12 @@ class GtkAlps(Gtk.Window):
 
 		self.root_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 		self.internal_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
-		self.add(self.root_paned)
+
+		self.add(self.vbox)
+
+		self.create_and_add_menu()
+
+		self.vbox.pack_start(self.root_paned, True, True, 0)
 
 		for p in self.flatpaks:
 			p['status'] = False
@@ -55,6 +61,16 @@ class GtkAlps(Gtk.Window):
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 		self.root_paned.set_position(width*0.75*0.25)
 		self.internal_paned.set_position(height*0.75*0.55)
+
+	def create_and_add_menu(self):
+		self.menubar = Gtk.MenuBar()
+		self.file_menu_item = Gtk.MenuItem.new_with_label('_File')
+		self.file_menu = Gtk.Menu()
+		self.new_file_item = Gtk.MenuItem.new_with_label('_New')
+		self.file_menu.append(self.new_file_item)
+		self.file_menu_item.set_submenu(self.file_menu)
+		self.menubar.append(self.file_menu_item)
+		self.vbox.pack_start(self.menubar, False, False, 0)
 
 	def on_category_change(self, source, event):
 		selection = self.category_list.get_selection()
