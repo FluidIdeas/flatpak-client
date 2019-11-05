@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+from gi.repository import Gdk
+
 import os
 import os.path
 import json
@@ -46,3 +53,29 @@ def download_package_database():
 	with open('flatpak-db.json', 'w') as fp:
 		json.dump(database, fp, indent=4, sort_keys=True)
 	return database
+
+def create_menu_item(label, action_handler):
+	item = Gtk.MenuItem.new_with_mnemonic(label)
+	if action_handler != None:
+		item.connect('clicked', action_handler)
+	return item
+
+def create_menu(label, item_labels, action_handlers):
+	menuitem = create_menu_item(label, None)
+	menu = Gtk.Menu()
+	for i in range(len(item_labels)):
+		if item_labels[i] == '':
+			item = Gtk.SeparatorMenuItem()
+		else:
+			item = create_menu_item(item_labels[i], action_handlers[i])
+		menu.append(item)
+	menuitem.set_submenu(menu)
+	return menuitem
+
+def create_main_menu():
+	menubar = Gtk.MenuBar()
+	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '_Update All Apps', '', '_Exit'], [None, None, None, None]))
+	menubar.append(create_menu('_Apps', ['_Search', '', '_Install Selected', '_Update Selected', '', '_Uninstall Selected'], [None, None, None, None, None, None]))
+	menubar.append(create_menu('_Settings', ['_Options'], [None]))
+	menubar.append(create_menu('_Help', ['_About'], [None]))
+	return menubar
