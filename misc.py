@@ -15,6 +15,10 @@ def get_all_packages():
 		url = 'https://flathub.org/api/v1/apps'
 		r = requests.get(url = url, verify=True)
 		packages = r.json()
+		for p in packages:
+			p['status'] = False
+			if None != p['currentReleaseDate']:
+				p['currentReleaseDate'] = p['currentReleaseDate'][:p['currentReleaseDate'].index('T')]
 		with open('repository/all_packages.json', 'w') as fp:
 			json.dump(packages, fp)
 	else:
@@ -57,7 +61,7 @@ def download_package_database():
 def create_menu_item(label, action_handler):
 	item = Gtk.MenuItem.new_with_mnemonic(label)
 	if action_handler != None:
-		item.connect('clicked', action_handler)
+		item.connect('activate', action_handler)
 	return item
 
 def create_menu(label, item_labels, action_handlers):
@@ -72,10 +76,22 @@ def create_menu(label, item_labels, action_handlers):
 	menuitem.set_submenu(menu)
 	return menuitem
 
-def create_main_menu():
+def create_main_menu(context):
 	menubar = Gtk.MenuBar()
-	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '_Update All Apps', '', '_Exit'], [None, None, None, None]))
-	menubar.append(create_menu('_Apps', ['_Search', '', '_Install Selected', '_Update Selected', '', '_Uninstall Selected'], [None, None, None, None, None, None]))
-	menubar.append(create_menu('_Settings', ['_Options'], [None]))
-	menubar.append(create_menu('_Help', ['_About'], [None]))
+	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '_Update All Apps', '', '_Exit'], [
+		context['menuActions']['refresh_apps'],
+		context['menuActions']['update_all_apps'],
+		None,
+		context['menuActions']['exit']]))
+	menubar.append(create_menu('_Apps', ['_Search', '', '_Install Selected', '_Update Selected', '', '_Uninstall Selected'], [
+		context['menuActions']['search'],
+		None,
+		context['menuActions']['install_selected'],
+		context['menuActions']['update_selected'],
+		None,
+		context['menuActions']['uninstall_selected']]))
+	menubar.append(create_menu('_Settings', ['_Options'], [
+		context['menuActions']['options']]))
+	menubar.append(create_menu('_Help', ['_About'], [
+		context['menuActions']['about']]))
 	return menubar

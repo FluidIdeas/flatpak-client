@@ -1,11 +1,12 @@
 import gi
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 import misc
+import threading
 
 # This list is supposed to show the list of all available flatpaks
 # The following information is shown in tabular format:
 # Install?, name, summary, current version, latest release date
-class FlatpakList(Gtk.TreeView):
+class PackageList(Gtk.TreeView):
 	def __init__(self, context):
 		Gtk.TreeView.__init__(self)
 		self.context = context
@@ -29,6 +30,15 @@ class FlatpakList(Gtk.TreeView):
 		self.connect('row-activated', self.onRowSelection)
 		self.set_activate_on_single_click(True)
 
+	def refresh_package_list(self, fetched_packages):
+		for package in fetched_packages:
+			package['status'] = False
+			if None != package['currentReleaseDate']:
+				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
+			self.add_package(package)
+		self.set_cursor(0)
+		self.onRowSelection(None, 0, None)
+
 	def get_model(self):
 		return self.package_store
 
@@ -47,11 +57,23 @@ class FlatpakList(Gtk.TreeView):
 		self.package_store.clear()
 
 	def onRowSelection(self, source, index, column):
+		self.selection_params = {
+			'source': source,
+			'index': index,
+			'column': column
+		}
+		thread = threading.Thread(target=self.fetch_package_details)
+		thread.daemon = True
+		thread.start()
+
+	def fetch_package_details(self):
+		GLib.timeout_add(50, self.context['statusBar'].toggle_pulse)
 		for i, row in enumerate(self.package_store):
-			if i == int(str(index)):
-				package_details = misc.get_package_details(self.package_store[index][5])
-				self.context['description'].set_data(package_details)
+			if i == int(str(self.selection_params['index'])):
+				self.package_details = misc.get_package_details(self.package_store[self.selection_params['index']][5])
+				self.context['description'].set_data(self.package_details)
 				break
+		GLib.timeout_add(50, self.context['statusBar'].toggle_pulse)
 
 	def on_toggle(self, cell, path, model):
 		if path is not None:

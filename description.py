@@ -79,7 +79,6 @@ class Description(Gtk.VBox):
 
         self.details = WebKit2.WebView()
         self.details.load_html('LibreOffice is a powerful office suite. Its clean interface and feature-rich tools help you unleash your creativity and enhance your productivity. LibreOffice includes several applications that make it the most powerful Free and Open Source office suite on the market: Writer (word processing), Calc (spreadsheets), Impress (presentations), Draw (vector graphics and flowcharts), Base (databases), and Math (formula editing). LibreOffice supports opening and saving into a wide variety of formats, so you can easily share documents with users of other popular office suites without worrying about compatibility.')
-        #self.details.set_hexpand(True)
         self.details.set_vexpand(True)
         settings = WebKit2.Settings()
         settings.set_default_font_family('Open Sans')

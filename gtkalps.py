@@ -4,80 +4,103 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GLib
+from gi.repository import GObject
 
 import json
 import os.path
 
-import flatpaklist
+import packagelist
 import categories
 import misc
 import description
+import dialogs
+import statusbar
+import threading
 
 class GtkAlps(Gtk.Window):
 	def __init__(self):
 		Gtk.Window.__init__(self, title='Aryalinux Package Manager')
-		context = dict()
-		self.vbox = Gtk.VBox()
-
+		self.context = dict()
+		self.context['mainFrame'] = self
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
-		
-		self.flatpaks = misc.get_all_packages()
+		self.packages = misc.get_all_packages()
+		self.context['packages'] = self.packages
+		self.init_menu()
 
-		self.root_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
-		self.internal_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
+		self.init_components()
+		self.layout_components()
+		self.finalize_ui()
 
-		self.add(self.vbox)
+	def init_components(self):
+		self.main_layout = Gtk.VBox()
+		self.main_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+		self.right_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
 
-		self.menubar = misc.create_main_menu()
-		self.vbox.pack_start(self.menubar, False, False, 0)
+		self.menubar = misc.create_main_menu(self.context)
+		self.status_bar = statusbar.StatusBar(self.context, len(self.packages))
+		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change)
+		self.package_list = flatpaklist.PackageList(self.context)
+		self.description = description.Description(self.context)
 
-		self.vbox.pack_start(self.root_paned, True, True, 0)
+		self.description_scrolled_window = Gtk.ScrolledWindow()
+		self.packagelist_scrolled_window = Gtk.ScrolledWindow()
 
-		for p in self.flatpaks:
-			p['status'] = False
-			if None != p['currentReleaseDate']:
-				p['currentReleaseDate'] = p['currentReleaseDate'][:p['currentReleaseDate'].index('T')]
-		context['packages'] = self.flatpaks
-		self.package_list = flatpaklist.FlatpakList(context)
-		self.description = description.Description(context)
-		self.scroller1 = Gtk.ScrolledWindow()
-		self.scroller1.add(self.description)
-		self.package_list.clear()
-		for package in self.flatpaks:
-			self.package_list.add_package(package)
-		self.category_list = categories.Categories(context, self.categories, self.on_category_change)
-		scrolled_window = Gtk.ScrolledWindow()
-		scrolled_window.add(self.package_list)
-		scrolled_window.set_hexpand(True)
-		scrolled_window.set_vexpand(True)
+	def layout_components(self):
+		self.add(self.main_layout)
+		self.main_layout.pack_start(self.menubar, False, False, 0)
+		self.main_layout.pack_start(self.main_paned, True, True, 0)
+		self.main_layout.pack_start(self.status_bar, False, False, 0)
 
-		self.root_paned.add1(self.category_list)
-		self.root_paned.add2(self.internal_paned)
-		self.internal_paned.add1(scrolled_window)
-		self.internal_paned.add2(self.scroller1)
+		self.packagelist_scrolled_window.set_hexpand(True)
+		self.packagelist_scrolled_window.set_vexpand(True)
+		self.description_scrolled_window.add(self.description)
+		self.packagelist_scrolled_window.add(self.package_list)
 
+		self.main_paned.add1(self.category_list)
+		self.main_paned.add2(self.right_paned)
+		self.right_paned.add1(self.packagelist_scrolled_window)
+		self.right_paned.add2(self.description_scrolled_window)
+
+	def finalize_ui(self):
 		(width, height) = self.get_screen_size()
 		self.set_size_request(width*0.75, height*0.75)
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
-		self.root_paned.set_position(width*0.75*0.25)
-		self.internal_paned.set_position(height*0.75*0.55)
+		self.main_paned.set_position(width*0.75*0.25)
+		self.right_paned.set_position(height*0.75*0.55)
+		self.connect('destroy', Gtk.main_quit)
+		self.show_all()
+
+	def init_menu(self):
+		self.context['menuActions'] = {}
+		self.context['menuActions']['refresh_apps'] = self.refresh_apps
+		self.context['menuActions']['update_all_apps'] = self.update_all_apps
+		self.context['menuActions']['exit'] = self.exit
+		self.context['menuActions']['search'] = self.search
+		self.context['menuActions']['install_selected'] = self.install_selected
+		self.context['menuActions']['uninstall_selected'] = self.uninstall_selected
+		self.context['menuActions']['update_selected'] = self.update_selected
+		self.context['menuActions']['options'] = self.options
+		self.context['menuActions']['about'] = self.about
 
 	def on_category_change(self, source, event):
+		self.package_list.clear()
+		thread = threading.Thread(target=self.fetch_packages)
+		thread.daemon = True
+		thread.start()
+
+	def fetch_packages(self):
+		GLib.timeout_add(50, self.status_bar.toggle_pulse)
 		selection = self.category_list.get_selection()
 		category = self.categories[selection.data]
 		if category == 'all':
 			pkgs = misc.get_all_packages()
 		else:
 			pkgs = misc.get_packages_by_category(category)
-		self.package_list.clear()
-		for package in pkgs:
-			package['status'] = False
-			if None != package['currentReleaseDate']:
-				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
-			self.package_list.add_package(package)
-		self.package_list.set_cursor(0)
-		self.package_list.onRowSelection(None, 0, None)
+		self.fetched_packages = pkgs
+		self.package_list.refresh_package_list(pkgs)
+		GLib.timeout_add(50, self.status_bar.toggle_pulse)
 
 	def get_screen_size(self):
 		display = Gdk.Display.get_default()
@@ -87,7 +110,36 @@ class GtkAlps(Gtk.Window):
 		height = geometry.height
 		return (width, height)
 
-app = GtkAlps()
-app.connect('destroy', Gtk.main_quit)
-app.show_all()
-Gtk.main()
+	def refresh_apps(self, event):
+		dialog = dialogs.WaitDialog(self, 'Fetching apps and refreshing the list from Flathub. Please wait.')
+		response = dialog.run()
+		if response == Gtk.ResponseType.OK:
+			dialog.destroy()
+
+	def update_all_apps(self, event):
+		pass
+
+	def exit(self, event):
+		exit()
+
+	def search(self, event):
+		pass
+	
+	def install_selected(self, event):
+		pass
+
+	def update_selected(self, event):
+		pass
+
+	def uninstall_selected(self, event):
+		pass
+
+	def options(self, event):
+		pass
+
+	def about(self, event):
+		pass
+
+if __name__ == "__main__":
+	app = GtkAlps()
+	Gtk.main()
