@@ -41,7 +41,7 @@ class GtkAlps(Gtk.Window):
 		self.menubar = misc.create_main_menu(self.context)
 		self.status_bar = statusbar.StatusBar(self.context, len(self.packages))
 		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change)
-		self.package_list = flatpaklist.PackageList(self.context)
+		self.package_list = packagelist.PackageList(self.context)
 		self.description = description.Description(self.context)
 
 		self.description_scrolled_window = Gtk.ScrolledWindow()
