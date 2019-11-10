@@ -25,6 +25,7 @@ class GtkAlps(Gtk.Window):
 		self.context['mainFrame'] = self
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
+		self.context['categories'] = self.categories
 		self.packages = misc.get_all_packages()
 		self.context['packages'] = self.packages
 		self.init_menu()
@@ -64,7 +65,7 @@ class GtkAlps(Gtk.Window):
 		self.right_paned.add2(self.description_scrolled_window)
 
 	def finalize_ui(self):
-		(width, height) = self.get_screen_size()
+		(width, height) = misc.get_screen_size()
 		self.set_size_request(width*0.75, height*0.75)
 		self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 		self.main_paned.set_position(width*0.75*0.25)
@@ -86,12 +87,9 @@ class GtkAlps(Gtk.Window):
 
 	def on_category_change(self, source, event):
 		self.package_list.clear()
-		thread = threading.Thread(target=self.fetch_packages)
-		thread.daemon = True
-		thread.start()
+		misc.run_as_new_thread_with_progress(self.fetch_packages, [], self.status_bar)
 
 	def fetch_packages(self):
-		GLib.timeout_add(50, self.status_bar.toggle_pulse)
 		selection = self.category_list.get_selection()
 		category = self.categories[selection.data]
 		if category == 'all':
@@ -100,17 +98,9 @@ class GtkAlps(Gtk.Window):
 			pkgs = misc.get_packages_by_category(category)
 		self.fetched_packages = pkgs
 		self.package_list.refresh_package_list(pkgs)
-		GLib.timeout_add(50, self.status_bar.toggle_pulse)
-
-	def get_screen_size(self):
-		display = Gdk.Display.get_default()
-		monitor = display.get_primary_monitor()
-		geometry = monitor.get_geometry()
-		width = geometry.width
-		height = geometry.height
-		return (width, height)
 
 	def refresh_apps(self, event):
+		misc.run_as_new_thread_with_progress(misc.refresh_apps, self.categories, self.status_bar)
 		dialog = dialogs.WaitDialog(self, 'Fetching apps and refreshing the list from Flathub. Please wait.')
 		response = dialog.run()
 		if response == Gtk.ResponseType.OK:

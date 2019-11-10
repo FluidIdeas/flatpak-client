@@ -3,15 +3,38 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from gi.repository import Gdk
+from gi.repository import Gdk, GLib
 
 import os
 import os.path
 import json
 import requests
+import threading
+import time
 
-def get_all_packages():
-	if not os.path.exists('repository/all_packages.json'):
+def get_screen_size():
+	display = Gdk.Display.get_default()
+	monitor = display.get_primary_monitor()
+	geometry = monitor.get_geometry()
+	width = geometry.width
+	height = geometry.height
+	return (width, height)
+
+def run_as_new_thread_with_progress(function, args, status_bar):
+	thread = threading.Thread(target=function_with_progress, args=[function, args, status_bar])
+	thread.daemon = True
+	thread.start()
+
+def function_with_progress(function, args, status_bar):
+	GLib.timeout_add(50, status_bar.toggle_pulse)
+	if len(args) == 0:
+		function()
+	else:
+		function(args)
+	GLib.timeout_add(50, status_bar.toggle_pulse)
+
+def get_all_packages(force=False):
+	if force or not os.path.exists('repository/all_packages.json'):
 		url = 'https://flathub.org/api/v1/apps'
 		r = requests.get(url = url, verify=True)
 		packages = r.json()
@@ -26,8 +49,8 @@ def get_all_packages():
 			packages = json.load(fp)
 	return packages
 
-def get_packages_by_category(category):
-	if not os.path.exists('repository/' + category + '_packages.json'):
+def get_packages_by_category(category, force=False):
+	if force or not os.path.exists('repository/' + category + '_packages.json'):
 		url = 'https://flathub.org/api/v1/apps/category/'
 		r = requests.get(url = url + category, verify=True)
 		packages = r.json()
@@ -44,19 +67,12 @@ def get_package_details(package_id):
 	package = r.json()
 	return package
 
-def download_package_database():
-	packages = get_all_packages()
-	database = dict()
-	for i, package in enumerate(packages):
-		print('Fetching ' + str(i) + ' of ' + str(len(packages)))
-		details = get_package_details(package['flatpakAppId'])
-		for category in details['categories']:
-			if category['name'] not in database:
-				database[category['name']] = list()
-			database[category['name']].append(details)
-	with open('flatpak-db.json', 'w') as fp:
-		json.dump(database, fp, indent=4, sort_keys=True)
-	return database
+def refresh_apps(categories):
+	for category in categories.keys():
+		if category == 'all':
+			get_all_packages(True)
+		else:
+			get_packages_by_category(category, True)
 
 def create_menu_item(label, action_handler):
 	item = Gtk.MenuItem.new_with_mnemonic(label)
