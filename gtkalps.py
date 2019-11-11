@@ -17,6 +17,7 @@ import description
 import dialogs
 import statusbar
 import threading
+import multiprocessing
 
 class GtkAlps(Gtk.Window):
 	def __init__(self):
@@ -100,11 +101,25 @@ class GtkAlps(Gtk.Window):
 		self.package_list.refresh_package_list(pkgs)
 
 	def refresh_apps(self, event):
-		misc.run_as_new_thread_with_progress(misc.refresh_apps, self.categories, self.status_bar)
-		dialog = dialogs.WaitDialog(self, 'Fetching apps and refreshing the list from Flathub. Please wait.')
-		response = dialog.run()
-		if response == Gtk.ResponseType.OK:
-			dialog.destroy()
+		dialog = dialogs.ProgressDialog(self, 'Downloading packages in progress. Please wait')
+		progressbar = dialog.progressbar
+		thread = threading.Thread(target=self.do_refresh_apps, args=[dialog.pulse, dialog.done])
+		thread.start()
+		response = dialog.show_all()
+		if response == Gtk.ResponseType.CANCEL:
+			dialog.done('Cancelling...')
+
+	def do_refresh_apps(self, iteration_callback, exit_callback):
+		i = 0
+		total = len(self.categories)
+		for category in self.categories.keys():
+			if category == 'all':
+				misc.get_all_packages(True)
+			else:
+				misc.get_packages_by_category(category, True)
+			i+=1
+			iteration_callback(i/total)
+		exit_callback('Download completed.')
 
 	def update_all_apps(self, event):
 		pass

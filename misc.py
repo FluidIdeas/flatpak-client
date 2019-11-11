@@ -30,7 +30,7 @@ def function_with_progress(function, args, status_bar):
 	if len(args) == 0:
 		function()
 	else:
-		function(args)
+		function(*args)
 	GLib.timeout_add(50, status_bar.toggle_pulse)
 
 def get_all_packages(force=False):
@@ -67,7 +67,7 @@ def get_package_details(package_id):
 	package = r.json()
 	return package
 
-def refresh_apps(categories):
+def refresh_apps(categories, context):
 	for category in categories.keys():
 		if category == 'all':
 			get_all_packages(True)
