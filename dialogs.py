@@ -16,6 +16,7 @@ class WaitDialog(Gtk.Dialog):
 class ProgressDialog(Gtk.Dialog):
     def __init__(self, parent, display_text):
         Gtk.Dialog.__init__(self, "Work in progress", parent)
+        self.set_modal(True)
         self.display_text = display_text
         self.init_components()
         self.layout_components()
@@ -25,13 +26,10 @@ class ProgressDialog(Gtk.Dialog):
         self.progressbar = Gtk.ProgressBar()
         self.progressbar.set_text(self.display_text)
         self.progressbar.set_show_text(True)
-        #self.button = Gtk.Button('Cancel')
-        #self.button.connect('clicked', self.on_click)
 
     def layout_components(self):
-        self.set_default_size(300, 90)
+        self.set_default_size(400, 70)
         self.box.pack_start(self.progressbar, True, True, 5)
-        #self.box.pack_start(self.button, False, False, 5)
         self.box.set_border_width(10)
 
     def pulse(self, value):
@@ -40,7 +38,4 @@ class ProgressDialog(Gtk.Dialog):
 
     def done(self, text):
         self.progressbar.set_text(text)
-
-    #def on_click(self, event):
-    #    self.done('Cancelling...')
-    #    self.destroy()
+        self.destroy()

@@ -39,7 +39,7 @@ class StatusBar(Gtk.HBox):
 
     def pulse(self):
         self.progressbar.pulse()
-        return True
+        return False
 
     def set_status_message(self, text):
         self.status_label.set_text(text)

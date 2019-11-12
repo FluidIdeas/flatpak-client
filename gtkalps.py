@@ -86,6 +86,20 @@ class GtkAlps(Gtk.Window):
 		self.context['menuActions']['options'] = self.options
 		self.context['menuActions']['about'] = self.about
 
+	def on_category_change_new(self, source, event):
+		self.package_list.clear()
+		selection = self.category_list.get_selection()
+		category = self.categories[selection.data]
+		if category == 'all':
+			pkgs = misc.get_all_packages()
+		else:
+			pkgs = misc.get_packages_by_category(category)
+		self.fetched_packages = pkgs
+		self.package_list.refresh_package_list(pkgs)
+
+	def update_progress(self):
+		self.status_bar.pulse()
+
 	def on_category_change(self, source, event):
 		self.package_list.clear()
 		misc.run_as_new_thread_with_progress(self.fetch_packages, [], self.status_bar)
@@ -104,10 +118,9 @@ class GtkAlps(Gtk.Window):
 		dialog = dialogs.ProgressDialog(self, 'Downloading packages in progress. Please wait')
 		progressbar = dialog.progressbar
 		thread = threading.Thread(target=self.do_refresh_apps, args=[dialog.pulse, dialog.done])
+		thread.daemon = True
 		thread.start()
 		response = dialog.show_all()
-		if response == Gtk.ResponseType.CANCEL:
-			dialog.done('Cancelling...')
 
 	def do_refresh_apps(self, iteration_callback, exit_callback):
 		i = 0
@@ -146,5 +159,6 @@ class GtkAlps(Gtk.Window):
 		pass
 
 if __name__ == "__main__":
+	Gdk.threads_init()
 	app = GtkAlps()
 	Gtk.main()
