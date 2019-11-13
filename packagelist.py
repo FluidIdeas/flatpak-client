@@ -33,7 +33,7 @@ class PackageList(Gtk.TreeView):
 	def refresh_package_list(self, fetched_packages):
 		for package in fetched_packages:
 			package['status'] = False
-			if None != package['currentReleaseDate']:
+			if None != package['currentReleaseDate'] and 'T' in package['currentReleaseDate']:
 				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
 			self.add_package(package)
 		self.set_cursor(0)
@@ -67,13 +67,11 @@ class PackageList(Gtk.TreeView):
 		thread.start()
 
 	def fetch_package_details(self):
-		GLib.timeout_add(50, self.context['statusBar'].toggle_pulse)
 		for i, row in enumerate(self.package_store):
 			if i == int(str(self.selection_params['index'])):
 				self.package_details = misc.get_package_details(self.package_store[self.selection_params['index']][5])
 				self.context['description'].set_data(self.package_details)
 				break
-		GLib.timeout_add(50, self.context['statusBar'].toggle_pulse)
 
 	def on_toggle(self, cell, path, model):
 		if path is not None:

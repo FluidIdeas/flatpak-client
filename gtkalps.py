@@ -42,7 +42,7 @@ class GtkAlps(Gtk.Window):
 
 		self.menubar = misc.create_main_menu(self.context)
 		self.status_bar = statusbar.StatusBar(self.context, len(self.packages))
-		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change)
+		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change_new)
 		self.package_list = packagelist.PackageList(self.context)
 		self.description = description.Description(self.context)
 
@@ -87,52 +87,28 @@ class GtkAlps(Gtk.Window):
 		self.context['menuActions']['about'] = self.about
 
 	def on_category_change_new(self, source, event):
-		self.package_list.clear()
 		selection = self.category_list.get_selection()
 		category = self.categories[selection.data]
-		if category == 'all':
-			pkgs = misc.get_all_packages()
-		else:
-			pkgs = misc.get_packages_by_category(category)
-		self.fetched_packages = pkgs
-		self.package_list.refresh_package_list(pkgs)
+		self.context['process_completed'] = False
+		self.context['process_type'] = 'unbound'
+		self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+		self.modal_dialog.show_all()
+		thread = threading.Thread(target=misc.download_apps, args=[category, self.context])
+		thread.start()
+		GLib.timeout_add(100, self.check_and_do)
+
+	def refresh_apps(self, source):
+		self.context['process_completed'] = False
+		self.context['process_type'] = 'bound'
+		self.context['fraction'] = 0.0
+		self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+		self.modal_dialog.show_all()
+		thread = threading.Thread(target=misc.refresh_packages, args=[self.context, self.categories])
+		thread.start()
+		GLib.timeout_add(100, self.check_and_do)
 
 	def update_progress(self):
 		self.status_bar.pulse()
-
-	def on_category_change(self, source, event):
-		self.package_list.clear()
-		misc.run_as_new_thread_with_progress(self.fetch_packages, [], self.status_bar)
-
-	def fetch_packages(self):
-		selection = self.category_list.get_selection()
-		category = self.categories[selection.data]
-		if category == 'all':
-			pkgs = misc.get_all_packages()
-		else:
-			pkgs = misc.get_packages_by_category(category)
-		self.fetched_packages = pkgs
-		self.package_list.refresh_package_list(pkgs)
-
-	def refresh_apps(self, event):
-		dialog = dialogs.ProgressDialog(self, 'Downloading packages in progress. Please wait')
-		progressbar = dialog.progressbar
-		thread = threading.Thread(target=self.do_refresh_apps, args=[dialog.pulse, dialog.done])
-		thread.daemon = True
-		thread.start()
-		response = dialog.show_all()
-
-	def do_refresh_apps(self, iteration_callback, exit_callback):
-		i = 0
-		total = len(self.categories)
-		for category in self.categories.keys():
-			if category == 'all':
-				misc.get_all_packages(True)
-			else:
-				misc.get_packages_by_category(category, True)
-			i+=1
-			iteration_callback(i/total)
-		exit_callback('Download completed.')
 
 	def update_all_apps(self, event):
 		pass
@@ -158,7 +134,20 @@ class GtkAlps(Gtk.Window):
 	def about(self, event):
 		pass
 
+	def check_and_do(self):
+		if self.context['process_completed'] == True:
+			self.fetched_packages = self.context['downloads']
+			self.package_list.clear()
+			self.package_list.refresh_package_list(self.fetched_packages)
+			self.modal_dialog.done('Done')
+			return False
+		else:
+			if self.context['process_type'] == 'unbound':
+				self.modal_dialog.pulse()
+			else:
+				self.modal_dialog.set_fraction(self.context['fraction'])
+			return True
+
 if __name__ == "__main__":
-	Gdk.threads_init()
 	app = GtkAlps()
 	Gtk.main()

@@ -11,6 +11,7 @@ import json
 import requests
 import threading
 import time
+import subprocess
 
 def get_screen_size():
 	display = Gdk.Display.get_default()
@@ -32,6 +33,51 @@ def function_with_progress(function, args, status_bar):
 	else:
 		function(*args)
 	GLib.timeout_add(50, status_bar.toggle_pulse)
+
+def get_file_for_category(category):
+	return category.lower() + '_packages.json'
+
+def download_apps(category, context, force=False):
+	if force or not os.path.exists('repository/' + get_file_for_category(category)):
+		if category == 'all':
+			url = 'https://flathub.org/api/v1/apps'
+		else:
+			url = 'https://flathub.org/api/v1/apps/category/' + category
+		timestamp = time.time() * 1000
+		process = subprocess.Popen('curl -s ' + url + ' > /tmp/' + str(timestamp) + '.gtkalps.pkgs', shell=True)
+		process.communicate()
+		with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
+			context['downloads'] = json.load(fp)
+			with open('repository/' + get_file_for_category(category), 'w') as fp1:
+				json.dump(packages, fp1)
+			context['process_completed'] = True
+		if os.path.exists('/tmp/' + str(timestamp) + '.gtkalps.pkgs'):
+			os.remove('/tmp/' + str(timestamp) + '.gtkalps.pkgs')
+	else:
+		with open('repository/' + get_file_for_category(category), 'r') as fp:
+			context['downloads'] = json.load(fp)
+			context['process_completed'] = True
+
+def refresh_packages(context, categories):
+	i = 0
+	for key, category in categories.items():
+		if category == 'all':
+			url = 'https://flathub.org/api/v1/apps'
+		else:
+			url = 'https://flathub.org/api/v1/apps/category/' + category
+		timestamp = time.time() * 1000
+		process = subprocess.Popen('curl -s "' + url + '" > /tmp/' + str(timestamp) + '.gtkalps.pkgs', shell=True)
+		process.communicate()
+		with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
+			data = fp.read().strip()
+			packages = json.loads(data)
+			with open('repository/' + get_file_for_category(category), 'w') as fp1:
+				json.dump(packages, fp1)
+		i = i + 1
+		context['fraction'] = i/len(categories)
+		if os.path.exists('/tmp/' + str(timestamp) + '.gtkalps.pkgs'):
+			os.remove('/tmp/' + str(timestamp) + '.gtkalps.pkgs')
+	context['process_completed'] = True
 
 def get_all_packages(force=False):
 	if force or not os.path.exists('repository/all_packages.json'):

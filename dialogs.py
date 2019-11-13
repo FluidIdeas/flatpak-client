@@ -32,8 +32,12 @@ class ProgressDialog(Gtk.Dialog):
         self.box.pack_start(self.progressbar, True, True, 5)
         self.box.set_border_width(10)
 
-    def pulse(self, value):
+    def set_fraction(self, value):
         self.progressbar.set_fraction(value)
+        return True
+
+    def pulse(self):
+        self.progressbar.pulse()
         return True
 
     def done(self, text):
