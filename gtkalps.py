@@ -111,7 +111,8 @@ class GtkAlps(Gtk.Window):
 		self.status_bar.pulse()
 
 	def update_all_apps(self, event):
-		pass
+		self.modal_dialog = dialogs.TerminalDialog(self, 'Action in progress')
+		self.modal_dialog.start_process(['/usr/bin/sudo', '/usr/bin/flatpak', '-y', 'update'])
 
 	def exit(self, event):
 		exit()
