@@ -27,7 +27,8 @@ class GtkAlps(Gtk.Window):
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
 		self.context['categories'] = self.categories
-		self.packages = misc.get_all_packages()
+		misc.download_apps('all', self.context)
+		self.packages = self.context['downloads']
 		self.context['packages'] = self.packages
 		self.init_menu()
 

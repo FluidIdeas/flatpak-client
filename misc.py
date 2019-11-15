@@ -21,19 +21,6 @@ def get_screen_size():
 	height = geometry.height
 	return (width, height)
 
-def run_as_new_thread_with_progress(function, args, status_bar):
-	thread = threading.Thread(target=function_with_progress, args=[function, args, status_bar])
-	thread.daemon = True
-	thread.start()
-
-def function_with_progress(function, args, status_bar):
-	GLib.timeout_add(50, status_bar.toggle_pulse)
-	if len(args) == 0:
-		function()
-	else:
-		function(*args)
-	GLib.timeout_add(50, status_bar.toggle_pulse)
-
 def get_file_for_category(category):
 	return category.lower() + '_packages.json'
 
@@ -112,13 +99,6 @@ def get_package_details(package_id):
 	r = requests.get(url = url + '/' + package_id, verify=True)
 	package = r.json()
 	return package
-
-def refresh_apps(categories, context):
-	for category in categories.keys():
-		if category == 'all':
-			get_all_packages(True)
-		else:
-			get_packages_by_category(category, True)
 
 def create_menu_item(label, action_handler):
 	item = Gtk.MenuItem.new_with_mnemonic(label)

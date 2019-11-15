@@ -27,13 +27,13 @@ class Description(Gtk.VBox):
         self.line2.set_homogeneous(True)
 
         self.heading = Gtk.Label()
-        self.heading.set_markup('<span size="xx-large">LibreOffice</span>')
+        self.heading.set_markup('<span size="xx-large"></span>')
         self.heading.set_hexpand(True)
         self.heading.set_vexpand(False)
         self.heading.set_halign(Gtk.Align.START)
         self.heading.set_valign(Gtk.Align.START)
 
-        self.short_description = Gtk.Label('The LibreOffice productivity suite')
+        self.short_description = Gtk.Label('')
         self.short_description.set_hexpand(True)
         self.short_description.set_vexpand(False)
         self.short_description.set_halign(Gtk.Align.START)
@@ -72,13 +72,13 @@ class Description(Gtk.VBox):
         self.update = Gtk.Button('Update')
         self.update.set_hexpand(False)
 
-        self.image = Gtk.Image.new_from_file('images/com.leinardi.gwe.png')
+        self.image = Gtk.Image.new_from_file('')
         self.image.set_hexpand(True)
         self.image.set_halign(Gtk.Align.START)
         self.image.set_valign(Gtk.Align.START)
 
         self.details = WebKit2.WebView()
-        self.details.load_html('LibreOffice is a powerful office suite. Its clean interface and feature-rich tools help you unleash your creativity and enhance your productivity. LibreOffice includes several applications that make it the most powerful Free and Open Source office suite on the market: Writer (word processing), Calc (spreadsheets), Impress (presentations), Draw (vector graphics and flowcharts), Base (databases), and Math (formula editing). LibreOffice supports opening and saving into a wide variety of formats, so you can easily share documents with users of other popular office suites without worrying about compatibility.')
+        self.details.load_html('')
         self.details.set_vexpand(True)
         settings = WebKit2.Settings()
         settings.set_default_font_family('Open Sans')
