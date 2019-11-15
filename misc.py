@@ -137,3 +137,29 @@ def create_main_menu(context):
 	menubar.append(create_menu('_Help', ['_About'], [
 		context['menuActions']['about']]))
 	return menubar
+
+def get_installed_apps(context):
+	process = subprocess.Popen('flatpak list', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	out, err = process.communicate()
+	lines = out.decode('utf8').split('\n')
+	installed = []
+	for line in lines:
+		if '\t' in line:
+			installed.append(line.strip().split('\t')[1])
+	return installed
+
+def search_apps(context, keywords):
+	process = subprocess.Popen('flatpak search ' + keywords, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	out, err = process.communicate()
+	lines = out.decode('utf8').split('\n')
+	results = []
+	for line in lines:
+		if '\t' in line:
+			results.append(line.strip().split('\t')[2])
+	context['downloads'] = []
+	for item in results:
+		for package in context['packages']:
+			if package['flatpakAppId'] == item:
+				context['downloads'].append(package)
+				break
+	context['process_completed'] = True

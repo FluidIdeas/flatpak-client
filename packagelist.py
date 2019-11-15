@@ -31,8 +31,9 @@ class PackageList(Gtk.TreeView):
 		self.set_activate_on_single_click(True)
 
 	def refresh_package_list(self, fetched_packages):
+		installed_packages = misc.get_installed_apps(self.context)
 		for package in fetched_packages:
-			package['status'] = False
+			package['status'] = package['flatpakAppId'] in installed_packages
 			if None != package['currentReleaseDate'] and 'T' in package['currentReleaseDate']:
 				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
 			self.add_package(package)
@@ -44,7 +45,7 @@ class PackageList(Gtk.TreeView):
 
 	def add_package(self, package):
 		row_data = [
-				False,
+				package['status'],
 				package['name'],
 				package['currentReleaseVersion'] if 'currentReleaseVersion' in package else '',
 				package['currentReleaseDate'] if 'currentReleaseDate' in package else '',

@@ -36,6 +36,8 @@ class GtkAlps(Gtk.Window):
 		self.layout_components()
 		self.finalize_ui()
 
+		misc.get_installed_apps(self.context)
+
 	def init_components(self):
 		self.main_layout = Gtk.VBox()
 		self.main_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
@@ -43,7 +45,7 @@ class GtkAlps(Gtk.Window):
 
 		self.menubar = misc.create_main_menu(self.context)
 		self.status_bar = statusbar.StatusBar(self.context, len(self.packages))
-		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change_new)
+		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change)
 		self.package_list = packagelist.PackageList(self.context)
 		self.description = description.Description(self.context)
 
@@ -87,16 +89,22 @@ class GtkAlps(Gtk.Window):
 		self.context['menuActions']['options'] = self.options
 		self.context['menuActions']['about'] = self.about
 
-	def on_category_change_new(self, source, event):
+	def on_category_change(self, source, event):
 		selection = self.category_list.get_selection()
 		category = self.categories[selection.data]
 		self.context['process_completed'] = False
 		self.context['process_type'] = 'unbound'
-		self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
-		self.modal_dialog.show_all()
-		thread = threading.Thread(target=misc.download_apps, args=[category, self.context])
-		thread.start()
-		GLib.timeout_add(100, self.check_and_do)
+		thread = None
+		if selection.data != 'Search Results':
+			self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+			self.modal_dialog.show_all()
+			thread = threading.Thread(target=misc.download_apps, args=[category, self.context])
+		else:
+			if category != '':
+				thread = threading.Thread(target=misc.search_apps, args=[self.context, 'libre'])
+		if thread != None:
+			thread.start()
+			GLib.timeout_add(100, self.check_and_do)
 
 	def refresh_apps(self, source):
 		self.context['process_completed'] = False
