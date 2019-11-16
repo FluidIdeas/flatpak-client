@@ -21,7 +21,7 @@ import multiprocessing
 
 class GtkAlps(Gtk.Window):
 	def __init__(self):
-		Gtk.Window.__init__(self, title='Aryalinux Package Manager')
+		Gtk.Window.__init__(self, title='Aryalinux Software Center')
 		self.context = dict()
 		self.context['mainFrame'] = self
 		self.context['installed_apps'] = misc.get_installed_apps(self.context)
