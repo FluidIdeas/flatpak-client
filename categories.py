@@ -35,3 +35,6 @@ class Categories(Gtk.VBox):
 
 	def get_selection(self):
 		return self.categories.get_selected_row()
+
+	def select_row(self, index):
+		self.select(self.rows[index])

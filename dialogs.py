@@ -91,3 +91,120 @@ class TerminalDialog(Gtk.Dialog):
 
     def on_click(self, event):
         self.destroy()
+
+class EntryDialog(Gtk.Dialog):
+    def __init__(self, parent, title):
+        Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        self.set_modal(True)
+        self.init_components()
+        self.layout_components()
+
+    def init_components(self):
+        self.box = self.get_content_area()
+        self.text_box = Gtk.Entry()
+        self.box.set_border_width(5)
+
+    def layout_components(self):
+        self.box.pack_start(self.text_box)
+        (w, h) = self.parent.get_size()
+        self.set_default_size(w * 0.5, -1)
+
+    def get_data(self):
+        return self.text_box.get_data()
+
+class SettingsDialog(Gtk.Dialog):
+    def __init__(self, parent, title):
+        Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        self.set_modal(True)
+        self.parent = parent
+        self.init_components()
+        self.layout_components()
+        self.show_all()
+
+    def init_components(self):
+        self.box = self.get_content_area()
+        self.main_notebook = Gtk.Notebook()
+        self.proxy_tab = ProxyTab()
+        self.proxy_tab.set_hexpand(True)
+
+    def layout_components(self):
+        self.main_notebook.append_page(self.proxy_tab, Gtk.Label('Proxy Settings'))
+        self.main_notebook.set_hexpand(True)
+        self.main_notebook.set_vexpand(True)
+        self.box.add(self.main_notebook)
+        (w, h) = self.parent.get_size()
+        self.set_default_size(600, 350)
+
+class ProxyTab(Gtk.Grid):
+    def __init__(self):
+        Gtk.Grid.__init__(self)
+        self.set_column_spacing(5)
+        self.set_row_spacing(5)
+        self.init_components()
+        self.layout_components()
+        self.set_border_width(5)
+
+    def init_components(self):
+        self.use_proxy_switch = Gtk.Switch()
+        self.use_proxy_switch.connect('notify::active', self.on_switch_activated)
+        self.use_proxy_switch.set_halign(Gtk.Align.START)
+
+        self.server = Gtk.Entry()
+        self.server.set_hexpand(True)
+        self.port = Gtk.Entry()
+        self.port.set_hexpand(True)
+        self.username = Gtk.Entry()
+        self.username.set_hexpand(True)
+        self.password = Gtk.Entry()
+        self.password.set_visibility(False)
+        self.password.set_hexpand(True)
+
+        self.enable_label = self.create_label('Enable Proxy')
+        self.server_label = self.create_label('Server')
+        self.port_label = self.create_label('Port')
+        self.username_label = self.create_label('Username')
+        self.password_label = self.create_label('Password')
+
+    def create_label(self, text):
+        label = Gtk.Label(text)
+        label.set_halign(Gtk.Align.END)
+        label.set_hexpand(False)
+        return label
+
+    def on_switch_activated(self, switch, gparam):
+        if switch.get_active():
+            self.use_proxy = True
+        else:
+            self.use_proxy = False
+
+    def add_component(self, component, x, y, w, h):
+        self.attach(component, x, y, w, h)
+
+    def layout_components(self):
+        self.add_component(self.enable_label, 0, 0, 1, 1)
+        self.add_component(self.server_label, 0, 1, 1, 1)
+        self.add_component(self.port_label, 0, 2, 1, 1)
+        self.add_component(self.username_label, 0, 3, 1, 1)
+        self.add_component(self.password_label, 0, 4, 1, 1)
+
+        self.add_component(self.use_proxy_switch, 1, 0, 1, 1)
+        self.add_component(self.server, 1, 1, 1, 1)
+        self.add_component(self.port, 1, 2, 1, 1)
+        self.add_component(self.username, 1, 3, 1, 1)
+        self.add_component(self.password, 1, 4, 1, 1)
+
+    def get_data(self):
+        return {
+            'enableProxy': self.use_proxy_switch.get_state(),
+            'server': self.server.get_data(),
+            'port': self.port.get_data(),
+            'username': self.username.get_data(),
+            'password': self.password.get_data()
+        }
+
+    def set_data(self, data):
+        self.use_proxy_switch.set_state(data['enableProxy'])
+        self.server.set_data(data['server'])
+        self.port.set_data(data['port'])
+        self.username.set_data(data['username'])
+        self.password.set_data(data['password'])

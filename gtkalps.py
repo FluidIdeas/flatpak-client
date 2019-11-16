@@ -101,7 +101,9 @@ class GtkAlps(Gtk.Window):
 			thread = threading.Thread(target=misc.download_apps, args=[category, self.context])
 		else:
 			if category != '':
-				thread = threading.Thread(target=misc.search_apps, args=[self.context, 'libre'])
+				self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+				self.modal_dialog.show_all()
+				thread = threading.Thread(target=misc.search_apps, args=[self.context, self.categories['Search Results']])
 		if thread != None:
 			thread.start()
 			GLib.timeout_add(100, self.check_and_do)
@@ -127,7 +129,12 @@ class GtkAlps(Gtk.Window):
 		exit()
 
 	def search(self, event):
-		pass
+		self.modal_dialog = dialogs.EntryDialog(self, 'Search Apps')
+		response = self.modal_dialog.run()
+		if response == Gtk.ResponseType.OK:
+			keywords = self.modal_dialog.get_data()
+			self.categories['Search Results'] = keywords
+			self.categories.select_row(self.categories.length - 1)
 	
 	def install_selected(self, event):
 		pass
@@ -139,7 +146,9 @@ class GtkAlps(Gtk.Window):
 		pass
 
 	def options(self, event):
-		pass
+		self.modal_dialog = dialogs.SettingsDialog(self, 'Settings')
+		response = self.modal_dialog.run()
+		self.modal_dialog.destroy()
 
 	def about(self, event):
 		pass
