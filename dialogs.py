@@ -4,6 +4,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Vte', '2.91')
 from gi.repository import Gtk, Vte, Gio, GLib
+import misc
 
 class WaitDialog(Gtk.Dialog):
     def __init__(self, parent, display_text):
@@ -48,9 +49,10 @@ class ProgressDialog(Gtk.Dialog):
         self.destroy()
 
 class TerminalDialog(Gtk.Dialog):
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, context):
         Gtk.Dialog.__init__(self, title, parent)
         self.parent = parent
+        self.context = context
         self.set_modal(True)
         self.init_components()
         self.layout_components()
@@ -94,10 +96,14 @@ class TerminalDialog(Gtk.Dialog):
 
 class EntryDialog(Gtk.Dialog):
     def __init__(self, parent, title):
-        Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        Gtk.Dialog.__init__(self, title, parent)
+        self.parent = parent
+        self.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
         self.set_modal(True)
         self.init_components()
         self.layout_components()
+        self.show_all()
 
     def init_components(self):
         self.box = self.get_content_area()
@@ -105,16 +111,18 @@ class EntryDialog(Gtk.Dialog):
         self.box.set_border_width(5)
 
     def layout_components(self):
-        self.box.pack_start(self.text_box)
+        self.box.pack_start(self.text_box, True, False, 5)
         (w, h) = self.parent.get_size()
-        self.set_default_size(w * 0.5, -1)
+        self.set_default_size(450, -1)
 
     def get_data(self):
-        return self.text_box.get_data()
+        return self.text_box.get_text()
 
 class SettingsDialog(Gtk.Dialog):
     def __init__(self, parent, title):
-        Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        Gtk.Dialog.__init__(self, title, parent)
+        self.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
         self.set_modal(True)
         self.parent = parent
         self.init_components()
@@ -131,6 +139,8 @@ class SettingsDialog(Gtk.Dialog):
         self.main_notebook.append_page(self.proxy_tab, Gtk.Label('Proxy Settings'))
         self.main_notebook.set_hexpand(True)
         self.main_notebook.set_vexpand(True)
+        self.box.set_border_width(5)
+        self.box.set_spacing(5)
         self.box.add(self.main_notebook)
         (w, h) = self.parent.get_size()
         self.set_default_size(600, 350)
@@ -196,15 +206,15 @@ class ProxyTab(Gtk.Grid):
     def get_data(self):
         return {
             'enableProxy': self.use_proxy_switch.get_state(),
-            'server': self.server.get_data(),
-            'port': self.port.get_data(),
-            'username': self.username.get_data(),
-            'password': self.password.get_data()
+            'server': self.server.get_text(),
+            'port': self.port.get_text(),
+            'username': self.username.get_text(),
+            'password': self.password.get_text()
         }
 
     def set_data(self, data):
         self.use_proxy_switch.set_state(data['enableProxy'])
-        self.server.set_data(data['server'])
-        self.port.set_data(data['port'])
-        self.username.set_data(data['username'])
-        self.password.set_data(data['password'])
+        self.server.set_text(data['server'])
+        self.port.set_text(data['port'])
+        self.username.set_text(data['username'])
+        self.password.set_text(data['password'])

@@ -44,20 +44,29 @@ def download_apps(category, context, force=False):
 		with open('repository/' + get_file_for_category(category), 'r') as fp:
 			context['downloads'] = json.load(fp)
 			context['process_completed'] = True
+	for package in context['downloads']:
+		package['status'] = package['flatpakAppId'] in context['active_apps']
 
 def refresh_packages(context, categories):
 	i = 0
 	for key, category in categories.items():
 		if category == 'all':
 			url = 'https://flathub.org/api/v1/apps'
-		else:
+		elif category != '':
 			url = 'https://flathub.org/api/v1/apps/category/' + category
+		elif category == '':
+			i = i + 1
+			context['fraction'] = 1.0
+			time.sleep(1)
+			continue
 		timestamp = time.time() * 1000
 		process = subprocess.Popen('curl -s "' + url + '" > /tmp/' + str(timestamp) + '.gtkalps.pkgs', shell=True)
 		process.communicate()
 		with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
 			data = fp.read().strip()
 			packages = json.loads(data)
+			for package in packages:
+				package['status'] = package['flatpakAppId'] in context['active_apps']
 			with open('repository/' + get_file_for_category(category), 'w') as fp1:
 				json.dump(packages, fp1)
 		i = i + 1
@@ -120,18 +129,15 @@ def create_menu(label, item_labels, action_handlers):
 
 def create_main_menu(context):
 	menubar = Gtk.MenuBar()
-	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '_Update All Apps', '', '_Exit'], [
+	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '', '_Exit'], [
 		context['menuActions']['refresh_apps'],
-		context['menuActions']['update_all_apps'],
 		None,
 		context['menuActions']['exit']]))
-	menubar.append(create_menu('_Apps', ['_Search', '', '_Install Selected', '_Update Selected', '', '_Uninstall Selected'], [
+	menubar.append(create_menu('_Apps', ['_Search', '', '_Apply Selections', '_Update All Apps'], [
 		context['menuActions']['search'],
 		None,
-		context['menuActions']['install_selected'],
-		context['menuActions']['update_selected'],
-		None,
-		context['menuActions']['uninstall_selected']]))
+		context['menuActions']['apply_selections'],
+		context['menuActions']['update_all_apps']]))
 	menubar.append(create_menu('_Settings', ['_Options'], [
 		context['menuActions']['options']]))
 	menubar.append(create_menu('_Help', ['_About'], [
@@ -161,5 +167,6 @@ def search_apps(context, keywords):
 		for package in context['packages']:
 			if package['flatpakAppId'] == item:
 				context['downloads'].append(package)
+				package['status'] = package['flatpakAppId'] in context['active_apps']
 				break
 	context['process_completed'] = True

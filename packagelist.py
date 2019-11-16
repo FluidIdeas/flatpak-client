@@ -30,10 +30,9 @@ class PackageList(Gtk.TreeView):
 		self.connect('row-activated', self.onRowSelection)
 		self.set_activate_on_single_click(True)
 
-	def refresh_package_list(self, fetched_packages):
-		installed_packages = misc.get_installed_apps(self.context)
-		for package in fetched_packages:
-			package['status'] = package['flatpakAppId'] in installed_packages
+	def refresh_package_list(self):
+		for package in self.context['downloads']:
+			package['status'] = package['flatpakAppId'] in self.context['active_apps']
 			if None != package['currentReleaseDate'] and 'T' in package['currentReleaseDate']:
 				package['currentReleaseDate'] = package['currentReleaseDate'][:package['currentReleaseDate'].index('T')]
 			self.add_package(package)
@@ -63,6 +62,12 @@ class PackageList(Gtk.TreeView):
 			'index': index,
 			'column': column
 		}
+		flatpakAppId = self.package_store[self.selection_params['index']][5]
+		status = self.package_store[self.selection_params['index']][0]
+		if flatpakAppId in self.context['active_apps'] and status == False:
+			self.context['active_apps'].remove(flatpakAppId)
+		elif status == True:
+			self.context['active_apps'].append(flatpakAppId)
 		thread = threading.Thread(target=self.fetch_package_details)
 		thread.daemon = True
 		thread.start()

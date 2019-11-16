@@ -37,4 +37,6 @@ class Categories(Gtk.VBox):
 		return self.categories.get_selected_row()
 
 	def select_row(self, index):
-		self.select(self.rows[index])
+		if self.get_selection().get_index() == index:
+			self.on_selection(None, None)
+		self.categories.select_row(self.rows[index])

@@ -24,6 +24,9 @@ class GtkAlps(Gtk.Window):
 		Gtk.Window.__init__(self, title='Aryalinux Package Manager')
 		self.context = dict()
 		self.context['mainFrame'] = self
+		self.context['installed_apps'] = misc.get_installed_apps(self.context)
+		self.context['active_apps'] = []
+		self.context['active_apps'].extend(self.context['installed_apps'])
 		with open('categories.json') as fp:
 			self.categories = json.load(fp)
 		self.context['categories'] = self.categories
@@ -83,9 +86,7 @@ class GtkAlps(Gtk.Window):
 		self.context['menuActions']['update_all_apps'] = self.update_all_apps
 		self.context['menuActions']['exit'] = self.exit
 		self.context['menuActions']['search'] = self.search
-		self.context['menuActions']['install_selected'] = self.install_selected
-		self.context['menuActions']['uninstall_selected'] = self.uninstall_selected
-		self.context['menuActions']['update_selected'] = self.update_selected
+		self.context['menuActions']['apply_selections'] = self.apply_selections
 		self.context['menuActions']['options'] = self.options
 		self.context['menuActions']['about'] = self.about
 
@@ -104,6 +105,9 @@ class GtkAlps(Gtk.Window):
 				self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
 				self.modal_dialog.show_all()
 				thread = threading.Thread(target=misc.search_apps, args=[self.context, self.categories['Search Results']])
+			else:
+				self.package_list.clear()
+				self.description.clear()
 		if thread != None:
 			thread.start()
 			GLib.timeout_add(100, self.check_and_do)
@@ -122,7 +126,8 @@ class GtkAlps(Gtk.Window):
 		self.status_bar.pulse()
 
 	def update_all_apps(self, event):
-		self.modal_dialog = dialogs.TerminalDialog(self, 'Action in progress')
+		self.context['action'] = 'update'
+		self.modal_dialog = dialogs.TerminalDialog(self, 'Action in progress', self.context)
 		self.modal_dialog.start_process(['/usr/bin/sudo', '/usr/bin/flatpak', '-y', 'update'])
 
 	def exit(self, event):
@@ -133,17 +138,50 @@ class GtkAlps(Gtk.Window):
 		response = self.modal_dialog.run()
 		if response == Gtk.ResponseType.OK:
 			keywords = self.modal_dialog.get_data()
+			self.modal_dialog.destroy()
 			self.categories['Search Results'] = keywords
-			self.categories.select_row(self.categories.length - 1)
+			self.category_list.select_row(len(self.categories) - 1)
+		else:
+			self.modal_dialog.destroy()
 	
-	def install_selected(self, event):
-		pass
-
-	def update_selected(self, event):
-		pass
-
-	def uninstall_selected(self, event):
-		pass
+	def apply_selections(self, event):
+		active = []
+		for id in self.context['active_apps']:
+			if id not in active:
+				active.append(id)
+		to_install = []
+		to_remove = []
+		for app in self.context['installed_apps']:
+			if app not in active:
+				to_remove.append(app)
+		for app in active:
+			if app not in self.context['installed_apps']:
+				to_install.append(app)
+		if len(to_install) == 0 and len(to_remove) == 0:
+			dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.OK, text="Information")
+			dialog.format_secondary_text("Nothing to be installed or installed. Please check or uncheck apps for installation/uninstallation")
+			dialog.run()
+			dialog.destroy()
+			return
+		dialog = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Are you sure you want to apply changes?")
+		dialog.format_secondary_text("This would install the apps that you checked and uninstall the apps that you unchecked.")
+		response = dialog.run()
+		if response == Gtk.ResponseType.YES:
+			dialog.destroy()
+			install_list = ' '.join(to_install)
+			remove_list = ' '.join(to_remove)
+			with open('/tmp/.flatpak-run.sh', 'w') as fp:
+				fp.write('#!/bin/bash\n\n')
+				fp.write('set -e\n')
+				fp.write('set +h\n\n')
+				if len(to_install) !=0:
+					fp.write('/usr/bin/sudo /usr/bin/flatpak -y install ' + install_list + '\n')
+				if len(to_remove) != 0:
+					fp.write('/usr/bin/sudo /usr/bin/flatpak -y uninstall ' + remove_list + '\n')
+				fp.write('sudo update-desktop-database' + '\n\n')
+			self.context['action'] = 'apply-changes'
+			self.modal_dialog = dialogs.TerminalDialog(self, 'Action in progress', self.context)
+			self.modal_dialog.start_process(['/bin/bash', '/tmp/.flatpak-run.sh'])
 
 	def options(self, event):
 		self.modal_dialog = dialogs.SettingsDialog(self, 'Settings')
@@ -155,9 +193,8 @@ class GtkAlps(Gtk.Window):
 
 	def check_and_do(self):
 		if self.context['process_completed'] == True:
-			self.fetched_packages = self.context['downloads']
 			self.package_list.clear()
-			self.package_list.refresh_package_list(self.fetched_packages)
+			self.package_list.refresh_package_list()
 			self.modal_dialog.done('Done')
 			return False
 		else:

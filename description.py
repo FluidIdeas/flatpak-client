@@ -114,6 +114,12 @@ class Description(Gtk.VBox):
         self.details.load_html(self.description_html(data))
         self.current_package_id = data['flatpakAppId']
 
+    def clear(self):
+        self.heading.set_markup('<span size="xx-large"></span>')
+        self.short_description.set_markup('')
+        self.details.load_html('')
+        self.current_package_id = ''
+
     def get_current_id(self):
         return self.current_package_id
 
