@@ -13,6 +13,8 @@ import threading
 import time
 import subprocess
 
+import dialogs
+
 def get_screen_size():
 	display = Gdk.Display.get_default()
 	monitor = display.get_primary_monitor()
@@ -145,14 +147,25 @@ def create_main_menu(context):
 	return menubar
 
 def get_installed_apps(context):
-	process = subprocess.Popen('flatpak list', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	process = subprocess.Popen('flatpak list --columns=application,version', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 	out, err = process.communicate()
 	lines = out.decode('utf8').split('\n')
-	installed = []
+	installed = dict()
 	for line in lines:
 		if '\t' in line:
-			installed.append(line.strip().split('\t')[1])
-	return installed
+			parts = line.strip().split('\t')
+			if len(parts) > 1:
+				installed[parts[0]] = parts[1]
+			else:
+				installed[parts[0]] = ''
+	context['installed_apps'] = installed
+	installed_app_ids = []
+	for key in installed.keys():
+		installed_app_ids.append(key)
+	return installed_app_ids
+
+def get_installed_version(context, flatpakAppId):
+	return context['installed_apps'][flatpakAppId] if flatpakAppId in context['installed_apps'] else None
 
 def search_apps(context, keywords):
 	process = subprocess.Popen('flatpak search ' + keywords, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -170,3 +183,58 @@ def search_apps(context, keywords):
 				package['status'] = package['flatpakAppId'] in context['active_apps']
 				break
 	context['process_completed'] = True
+
+def is_installed(context, appId):
+	installed = get_installed_apps(context)
+	return appId in installed
+
+def install_app(widget, *data):
+	context = data[0]
+	dialog = Gtk.MessageDialog(parent=context['mainFrame'], flags=0, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Install app")
+	dialog.format_secondary_text("Are you sure you want to install " + context['current_app']['name'] + '?')
+	response = dialog.run()
+	if response == Gtk.ResponseType.YES:
+		dialog.destroy()
+		with open('/tmp/.flatpak-run.sh', 'w') as fp:
+			fp.write('#!/bin/bash\n\n')
+			fp.write('set -e\n')
+			fp.write('set +h\n\n')
+			fp.write('/usr/bin/sudo /usr/bin/flatpak -y install ' + context['current_app']['flatpakAppId'] + '\n')
+			fp.write('sudo update-desktop-database' + '\n\n')
+		data[0]['action'] = 'apply-changes'
+		modal_dialog = dialogs.TerminalDialog(context['mainFrame'], 'Action in progress', context)
+		modal_dialog.start_process(['/bin/bash', '/tmp/.flatpak-run.sh'])
+
+def remove_app(widget, *data):
+	context = data[0]
+	dialog = Gtk.MessageDialog(parent=context['mainFrame'], flags=0, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Uninstall app")
+	dialog.format_secondary_text("Are you sure you want to uninstall " + context['current_app']['name'] + '?')
+	response = dialog.run()
+	if response == Gtk.ResponseType.YES:
+		dialog.destroy()
+		with open('/tmp/.flatpak-run.sh', 'w') as fp:
+			fp.write('#!/bin/bash\n\n')
+			fp.write('set -e\n')
+			fp.write('set +h\n\n')
+			fp.write('/usr/bin/sudo /usr/bin/flatpak -y uninstall ' + context['current_app']['flatpakAppId'] + '\n')
+			fp.write('sudo update-desktop-database' + '\n\n')
+		data[0]['action'] = 'apply-changes'
+		modal_dialog = dialogs.TerminalDialog(context['mainFrame'], 'Action in progress', context)
+		modal_dialog.start_process(['/bin/bash', '/tmp/.flatpak-run.sh'])
+
+def update_app(widget, *data):
+	context = data[0]
+	dialog = Gtk.MessageDialog(parent=context['mainFrame'], flags=0, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text="Update app")
+	dialog.format_secondary_text("Are you sure you want to update " + context['current_app']['name'] + '?')
+	response = dialog.run()
+	if response == Gtk.ResponseType.YES:
+		dialog.destroy()
+		with open('/tmp/.flatpak-run.sh', 'w') as fp:
+			fp.write('#!/bin/bash\n\n')
+			fp.write('set -e\n')
+			fp.write('set +h\n\n')
+			fp.write('/usr/bin/sudo /usr/bin/flatpak -y update ' + context['current_app']['flatpakAppId'] + '\n')
+			fp.write('sudo update-desktop-database' + '\n\n')
+		data[0]['action'] = 'apply-changes'
+		modal_dialog = dialogs.TerminalDialog(context['mainFrame'], 'Action in progress', context)
+		modal_dialog.start_process(['/bin/bash', '/tmp/.flatpak-run.sh'])

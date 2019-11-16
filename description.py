@@ -5,16 +5,18 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import WebKit2
 import urllib.request
+import misc
 
 class Description(Gtk.VBox):
     def __init__(self, context):
         Gtk.VBox.__init__(self)
+        self.context = context
+        self.context['description'] = self
+        self.current_app = None
         self.create_components()
         self.add_components()
 
         self.set_border_width(10)
-        self.context = context
-        self.context['description'] = self
 
     def create_components(self):
         self.left_box = Gtk.VBox()
@@ -92,6 +94,10 @@ class Description(Gtk.VBox):
         self.package_info_label.set_halign(Gtk.Align.END)
         self.package_info_label.set_valign(Gtk.Align.START)
 
+        self.install.connect('clicked', misc.install_app, self.context)
+        self.uninstall.connect('clicked', misc.remove_app, self.context)
+        self.update.connect('clicked', misc.update_app, self.context)
+
     def add_components(self):
 
         self.button_box.pack_start(self.install, False, True, 5)
@@ -109,10 +115,22 @@ class Description(Gtk.VBox):
         self.pack_start(self.details, False, True, 0)
 
     def set_data(self, data):
+        self.context['current_app'] = data
         self.heading.set_markup('<span size="xx-large">' + data['name'] + '</span>')
         self.short_description.set_markup(data['summary'])
         self.details.load_html(self.description_html(data))
         self.current_package_id = data['flatpakAppId']
+        self.is_installed = misc.is_installed(self.context, self.current_package_id)
+        if self.is_installed:
+            self.install.set_sensitive(False)
+            self.uninstall.set_sensitive(True)
+        else:
+            self.install.set_sensitive(True)
+            self.uninstall.set_sensitive(False)
+        if not data['currentReleaseVersion'] == misc.get_installed_version(self.context, self.current_package_id):
+            self.update.set_sensitive(True)
+        else:
+            self.update.set_sensitive(False)
 
     def clear(self):
         self.heading.set_markup('<span size="xx-large"></span>')
