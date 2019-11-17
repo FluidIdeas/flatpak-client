@@ -238,3 +238,11 @@ def update_app(widget, *data):
 		data[0]['action'] = 'apply-changes'
 		modal_dialog = dialogs.TerminalDialog(context['mainFrame'], 'Action in progress', context)
 		modal_dialog.start_process(['/bin/bash', '/tmp/.flatpak-run.sh'])
+
+def load_settings(context):
+	conf_file = os.environ['HOME'] + '/.asc.conf'
+	if os.path.exists(conf_file):
+		with open(conf_file) as fp:
+			context['config'] = json.load(fp)
+	else:
+		context['config'] = {}

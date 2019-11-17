@@ -2,10 +2,7 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from gi.repository import Gdk
-from gi.repository import GLib
-from gi.repository import GObject
+from gi.repository import Gtk, Gdk, GLib, GObject, GdkPixbuf
 
 import json
 import os.path
@@ -23,6 +20,7 @@ class GtkAlps(Gtk.Window):
 	def __init__(self):
 		Gtk.Window.__init__(self, title='Aryalinux Software Center')
 		self.context = dict()
+		misc.load_settings(self.context)
 		self.context['mainFrame'] = self
 		self.context['installed_apps'] = misc.get_installed_apps(self.context)
 		self.context['active_apps'] = []
@@ -189,7 +187,15 @@ class GtkAlps(Gtk.Window):
 		self.modal_dialog.destroy()
 
 	def about(self, event):
-		pass
+		about = Gtk.AboutDialog(title='About AryaLinux Software Center')
+		about.set_program_name("AryaLinux Software Center")
+		about.set_version("1.0")
+		about.set_copyright("(c) Chandrakant Singh")
+		about.set_comments("AryaLinux Software Center is a frontend to flatpak and provides an easy way to search/install/uninstall/update apps using Flathub in AryaLinux")
+		about.set_website("http://www.aryalinux.info")
+		about.set_logo(GdkPixbuf.Pixbuf.new_from_file("aryalinux128.png"))
+		about.run()
+		about.destroy()
 
 	def check_and_do(self):
 		if self.context['process_completed'] == True:

@@ -218,3 +218,13 @@ class ProxyTab(Gtk.Grid):
         self.port.set_text(data['port'])
         self.username.set_text(data['username'])
         self.password.set_text(data['password'])
+        if data['enableProxy']:
+            self.server.set_sensitive(True)
+            self.port.set_sensitive(True)
+            self.username.set_sensitive(True)
+            self.password.set_sensitive(True)
+        else:
+            self.server.set_sensitive(False)
+            self.port.set_sensitive(False)
+            self.username.set_sensitive(False)
+            self.password.set_sensitive(False)
