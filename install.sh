@@ -7,6 +7,8 @@ TARGET="/usr/lib/aryalinux-software-center"
 REPO="/var/cache/aryalinux-software-center"
 ICONLOCATION="/usr/share/pixmaps/"
 
+if [ ! -x /usr/bin/flatpak ]; then echo "Flatpak not installed. Please install flatpak and continue." && exit; fi
+
 sudo mkdir -pv $TARGET
 sudo cp -v aryalinux-software-center $TARGET
 sudo cp -vf *.py $TARGET

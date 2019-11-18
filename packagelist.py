@@ -10,11 +10,10 @@ class PackageList(Gtk.TreeView):
 	def __init__(self, context):
 		Gtk.TreeView.__init__(self)
 		self.context = context
-
 		self.package_store = Gtk.ListStore(bool, str, str, str, str, str)
-
 		self.set_model(self.package_store)
 
+		self.get_font_color()
 		for i, title in enumerate(['Installed', 'Name', 'Current Version', 'Release Date', 'Description', 'Flatpak ID']):
 			if i != 0:
 				renderer = Gtk.CellRendererText()
@@ -24,11 +23,34 @@ class PackageList(Gtk.TreeView):
 				renderer.set_property('activatable', True)
 				renderer.connect("toggled", self.on_toggle, self.package_store)
 				column = Gtk.TreeViewColumn(title, renderer, active=0)
+			column.set_cell_data_func(renderer, self.background_color_function)
 			self.append_column(column)
 		self.set_hexpand(True)
 		self.set_vexpand(True)
 		self.connect('row-activated', self.onRowSelection)
 		self.set_activate_on_single_click(True)
+
+	def get_font_color(self):
+		self.font_color = self.rgba_to_hex(self.get_style_context().get_color(Gtk.StateType.NORMAL))
+		
+	def rgba_to_hex(self, color):
+		return "#{0:02x}{1:02x}{2:02x}".format(int(color.red  * 255), int(color.green * 255), int(color.blue * 255))
+
+	def background_color_function(self, column, cell, model, iter, user_data):
+		installed = model.get_value(iter, 0)
+		if installed:
+			if isinstance(cell, Gtk.CellRendererText):
+				cell.set_property('cell-background','#008000')
+				cell.set_property('foreground', '#ffffff')
+			else:
+				cell.set_sensitive(False)
+		else:
+			if isinstance(cell, Gtk.CellRendererText):
+				cell.set_property('cell-background','#ffffff')
+				cell.set_property('foreground', self.font_color)
+			else:
+				cell.set_sensitive(False)
+		pass 
 
 	def refresh_package_list(self):
 		for package in self.context['downloads']:

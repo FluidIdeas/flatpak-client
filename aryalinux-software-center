@@ -8,6 +8,7 @@ import json
 import os.path
 
 import packagelist
+import searchbar
 import categories
 import misc
 import description
@@ -47,6 +48,7 @@ class GtkAlps(Gtk.Window):
 		self.main_layout = Gtk.VBox()
 		self.main_paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 		self.right_paned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
+		self.top_right = Gtk.VBox()
 
 		self.menubar = misc.create_main_menu(self.context)
 		self.status_bar = statusbar.StatusBar(self.context, len(self.packages))
@@ -70,7 +72,11 @@ class GtkAlps(Gtk.Window):
 
 		self.main_paned.add1(self.category_list)
 		self.main_paned.add2(self.right_paned)
-		self.right_paned.add1(self.packagelist_scrolled_window)
+
+		self.top_right.pack_start(searchbar.SearchBar(self.context), False, False, 0)
+		self.top_right.pack_start(self.packagelist_scrolled_window, True, True, 0)
+		self.right_paned.add1(self.top_right)
+		#self.right_paned.add1(self.packagelist_scrolled_window)
 		self.right_paned.add2(self.description_scrolled_window)
 
 	def finalize_ui(self):
