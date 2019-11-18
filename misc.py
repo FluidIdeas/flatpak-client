@@ -15,6 +15,8 @@ import subprocess
 
 import dialogs
 
+REPO_DIR="/var/cache/aryalinux-software-center/"
+
 def get_screen_size():
 	display = Gdk.Display.get_default()
 	monitor = display.get_primary_monitor()
@@ -51,7 +53,7 @@ def get_proxy_env_vars(context):
 		return {}
 
 def download_apps(category, context, force=False):
-	if force or not os.path.exists('repository/' + get_file_for_category(category)):
+	if force or not os.path.exists(REPO_DIR + get_file_for_category(category)):
 		if category == 'all':
 			url = 'https://flathub.org/api/v1/apps'
 		else:
@@ -61,13 +63,13 @@ def download_apps(category, context, force=False):
 		process.communicate()
 		with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
 			context['downloads'] = json.load(fp)
-			with open('repository/' + get_file_for_category(category), 'w') as fp1:
+			with open(REPO_DIR + get_file_for_category(category), 'w') as fp1:
 				json.dump(packages, fp1)
 			context['process_completed'] = True
 		if os.path.exists('/tmp/' + str(timestamp) + '.gtkalps.pkgs'):
 			os.remove('/tmp/' + str(timestamp) + '.gtkalps.pkgs')
 	else:
-		with open('repository/' + get_file_for_category(category), 'r') as fp:
+		with open(REPO_DIR + get_file_for_category(category), 'r') as fp:
 			context['downloads'] = json.load(fp)
 			context['process_completed'] = True
 	for package in context['downloads']:
@@ -93,7 +95,7 @@ def refresh_packages(context, categories):
 			packages = json.loads(data)
 			for package in packages:
 				package['status'] = package['flatpakAppId'] in context['active_apps']
-			with open('repository/' + get_file_for_category(category), 'w') as fp1:
+			with open(REPO_DIR + get_file_for_category(category), 'w') as fp1:
 				json.dump(packages, fp1)
 		i = i + 1
 		context['fraction'] = i/len(categories)
@@ -118,14 +120,14 @@ def get_all_packages(force=False):
 	return packages
 
 def get_packages_by_category(category, force=False):
-	if force or not os.path.exists('repository/' + category + '_packages.json'):
+	if force or not os.path.exists(REPO_DIR + category + '_packages.json'):
 		url = 'https://flathub.org/api/v1/apps/category/'
 		r = requests.get(url = url + category, verify=True)
 		packages = r.json()
-		with open('repository/' + category + '_packages.json', 'w') as fp:
+		with open(REPO_DIR + category + '_packages.json', 'w') as fp:
 			json.dump(packages, fp)
 	else:
-		with open('repository/' + category + '_packages.json', 'r') as fp:
+		with open(REPO_DIR + category + '_packages.json', 'r') as fp:
 			packages = json.load(fp)
 	return packages
 

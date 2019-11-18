@@ -16,16 +16,20 @@ import statusbar
 import threading
 import multiprocessing
 
+ICON_PATH="/usr/share/pixmaps/asc.png"
+LIB_PATH="/usr/lib/aryalinux-software-center/"
+
 class GtkAlps(Gtk.Window):
 	def __init__(self):
 		Gtk.Window.__init__(self, title='Aryalinux Software Center')
+		self.set_default_icon_from_file(ICON_PATH)
 		self.context = dict()
 		misc.load_settings(self.context)
 		self.context['mainFrame'] = self
 		self.context['installed_apps'] = misc.get_installed_apps(self.context)
 		self.context['active_apps'] = []
 		self.context['active_apps'].extend(self.context['installed_apps'])
-		with open('categories.json') as fp:
+		with open(LIB_PATH + 'categories.json') as fp:
 			self.categories = json.load(fp)
 		self.context['categories'] = self.categories
 		misc.download_apps('all', self.context)
@@ -197,7 +201,7 @@ class GtkAlps(Gtk.Window):
 		about.set_copyright("(c) Chandrakant Singh")
 		about.set_comments("AryaLinux Software Center is a frontend to flatpak and provides an easy way to search/install/uninstall/update apps using Flathub in AryaLinux")
 		about.set_website("http://www.aryalinux.info")
-		about.set_logo(GdkPixbuf.Pixbuf.new_from_file("aryalinux128.png"))
+		about.set_logo(GdkPixbuf.Pixbuf.new_from_file(ICON_PATH))
 		about.run()
 		about.destroy()
 
