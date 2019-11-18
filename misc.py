@@ -26,6 +26,30 @@ def get_screen_size():
 def get_file_for_category(category):
 	return category.lower() + '_packages.json'
 
+def get_proxy_env_vars(context):
+	if 'settings' in context and 'proxy' in context['settings']:
+		if context['settings']['proxy']['enableProxy']:
+			server = context['settings']['proxy']['proxy'][0]['server']
+			port = context['settings']['proxy']['proxy'][0]['port']
+			username = context['settings']['proxy']['proxy'][0]['username']
+			password = context['settings']['proxy']['proxy'][0]['password']
+			if 'useSameSettings' in context['settings']['proxy']:
+				return {
+					'http_proxy': 'http://' + username + ':' + password + '@' + server + ':' + port,
+					'https_proxy': 'http://' + username + ':' + password + '@' + server + ':' + port,
+					'ftp_proxy': 'http://' + username + ':' + password + '@' + server + ':' + port
+				}
+			else:
+				result = {}
+				var_names = ['http_proxy', 'https_proxy', 'ftp_proxy']
+				for i, var_name in enumerate(var_names):
+					result[var_name] = 'http://' + username[i] + ':' + password[i] + '@' + server[i] + ':' + port[i]
+				return result
+		else:
+			return {}
+	else:
+		return {}
+
 def download_apps(category, context, force=False):
 	if force or not os.path.exists('repository/' + get_file_for_category(category)):
 		if category == 'all':
@@ -33,7 +57,7 @@ def download_apps(category, context, force=False):
 		else:
 			url = 'https://flathub.org/api/v1/apps/category/' + category
 		timestamp = time.time() * 1000
-		process = subprocess.Popen('curl -s ' + url + ' > /tmp/' + str(timestamp) + '.gtkalps.pkgs', shell=True)
+		process = subprocess.Popen('curl -s ' + url + ' > /tmp/' + str(timestamp) + '.gtkalps.pkgs', env=get_proxy_env_vars(context), shell=True)
 		process.communicate()
 		with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
 			context['downloads'] = json.load(fp)
@@ -62,7 +86,7 @@ def refresh_packages(context, categories):
 			time.sleep(1)
 			continue
 		timestamp = time.time() * 1000
-		process = subprocess.Popen('curl -s "' + url + '" > /tmp/' + str(timestamp) + '.gtkalps.pkgs', shell=True)
+		process = subprocess.Popen('curl -s "' + url + '" > /tmp/' + str(timestamp) + '.gtkalps.pkgs', env=get_proxy_env_vars(context), shell=True)
 		process.communicate()
 		with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
 			data = fp.read().strip()
@@ -105,10 +129,14 @@ def get_packages_by_category(category, force=False):
 			packages = json.load(fp)
 	return packages
 
-def get_package_details(package_id):
-	url = 'https://flathub.org/api/v1/apps'
-	r = requests.get(url = url + '/' + package_id, verify=True)
-	package = r.json()
+def get_package_details(context, package_id):
+	url = 'https://flathub.org/api/v1/apps/' + package_id
+	timestamp = time.time() * 1000
+	process = subprocess.Popen('curl -s ' + url + ' > /tmp/' + str(timestamp) + '.gtkalps.pkgs', env=get_proxy_env_vars(context), shell=True)
+	process.communicate()
+	with open('/tmp/' + str(timestamp) + '.gtkalps.pkgs', 'r') as fp:
+		package = json.load(fp)
+	os.remove('/tmp/' + str(timestamp) + '.gtkalps.pkgs')
 	return package
 
 def create_menu_item(label, action_handler):
@@ -243,6 +271,12 @@ def load_settings(context):
 	conf_file = os.environ['HOME'] + '/.asc.conf'
 	if os.path.exists(conf_file):
 		with open(conf_file) as fp:
-			context['config'] = json.load(fp)
+			context['settings'] = json.load(fp)
 	else:
-		context['config'] = {}
+		context['settings'] = {}
+
+def save_settings(context):
+	conf_file = os.environ['HOME'] + '/.asc.conf'
+	with open(conf_file, 'w') as fp:
+		json.dump(context['settings'], fp)
+

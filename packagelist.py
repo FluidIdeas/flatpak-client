@@ -75,7 +75,7 @@ class PackageList(Gtk.TreeView):
 	def fetch_package_details(self):
 		for i, row in enumerate(self.package_store):
 			if i == int(str(self.selection_params['index'])):
-				self.package_details = misc.get_package_details(self.package_store[self.selection_params['index']][5])
+				self.package_details = misc.get_package_details(self.context, self.package_store[self.selection_params['index']][5])
 				self.context['description'].set_data(self.package_details)
 				break
 

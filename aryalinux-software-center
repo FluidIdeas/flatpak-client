@@ -183,7 +183,11 @@ class GtkAlps(Gtk.Window):
 
 	def options(self, event):
 		self.modal_dialog = dialogs.SettingsDialog(self, 'Settings')
+		self.modal_dialog.set_data(self.context['settings'])
 		response = self.modal_dialog.run()
+		if response == Gtk.ResponseType.OK:
+			self.context['settings'] = self.modal_dialog.get_data()
+			misc.save_settings(self.context)
 		self.modal_dialog.destroy()
 
 	def about(self, event):
@@ -209,6 +213,22 @@ class GtkAlps(Gtk.Window):
 			else:
 				self.modal_dialog.set_fraction(self.context['fraction'])
 			return True
+
+	def get_proxy_string(self):
+		if 'settings' in self.context and 'proxy' in self.context['settings'] and 'enableProxy' in self.context['settings']['proxy']:
+			if not self.context['settings']['proxy']['enableProxy']:
+				return ''
+			else:
+				server = self.context['settings']['proxy']['server']
+				port = self.context['settings']['proxy']['port']
+				username = self.context['settings']['proxy']['username']
+				password = self.context['settings']['proxy']['password']
+				result = server + ':' + port
+				if not (username == None or username == ''):
+					result = username + ':' + password + '@' + result
+				return result
+		else:
+			return ''
 
 if __name__ == "__main__":
 	app = GtkAlps()
