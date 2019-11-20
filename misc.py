@@ -161,15 +161,11 @@ def create_menu(label, item_labels, action_handlers):
 
 def create_main_menu(context):
 	menubar = Gtk.MenuBar()
-	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '', '_Exit'], [
+	menubar.append(create_menu('_Flatpak', ['_Refresh Apps', '_Update All Apps', '', '_Exit'], [
 		context['menuActions']['refresh_apps'],
+		context['menuActions']['update_all_apps'],
 		None,
 		context['menuActions']['exit']]))
-	menubar.append(create_menu('_Apps', ['_Search', '', '_Apply Selections', '_Update All Apps'], [
-		context['menuActions']['search'],
-		None,
-		context['menuActions']['apply_selections'],
-		context['menuActions']['update_all_apps']]))
 	menubar.append(create_menu('_Settings', ['_Options'], [
 		context['menuActions']['options']]))
 	menubar.append(create_menu('_Help', ['_About'], [
@@ -198,7 +194,7 @@ def get_installed_version(context, flatpakAppId):
 	return context['installed_apps'][flatpakAppId] if flatpakAppId in context['installed_apps'] else None
 
 def search_apps(context, keywords):
-	process = subprocess.Popen('flatpak search ' + keywords, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+	process = subprocess.Popen('flatpak search ' + keywords, env=get_proxy_env_vars(context), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 	out, err = process.communicate()
 	lines = out.decode('utf8').split('\n')
 	results = []
@@ -270,15 +266,15 @@ def update_app(widget, *data):
 		modal_dialog.start_process(['/bin/bash', '/tmp/.flatpak-run.sh'])
 
 def load_settings(context):
-	conf_file = os.environ['HOME'] + '/.asc.conf'
+	conf_file = '/etc/asc.conf'
 	if os.path.exists(conf_file):
 		with open(conf_file) as fp:
 			context['settings'] = json.load(fp)
 	else:
-		context['settings'] = {}
+		context['settings'] = {'enableProxy': False}
 
 def save_settings(context):
-	conf_file = os.environ['HOME'] + '/.asc.conf'
+	conf_file = '/etc/asc.conf'
 	with open(conf_file, 'w') as fp:
 		json.dump(context['settings'], fp)
 

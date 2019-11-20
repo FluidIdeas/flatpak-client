@@ -16,6 +16,7 @@ class SearchBar(Gtk.HBox):
         self.search_box = Gtk.Entry()
         self.search_button = Gtk.Button('Go')
         self.search_button.connect('clicked', self.on_search)
+        self.search_box.connect('activate', self.on_search)
         self.set_border_width(5)
 
     def layout_components(self):
@@ -24,4 +25,6 @@ class SearchBar(Gtk.HBox):
         self.pack_start(self.search_button, False, False, 5)
 
     def on_search(self, widget):
-        pass
+        keywords = self.search_box.get_text()
+        self.context['categories']['Search Results'] = keywords
+        self.context['category_list'].select_row(len(self.context['categories']) - 1)

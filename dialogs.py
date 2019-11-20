@@ -18,21 +18,22 @@ class WaitDialog(Gtk.Dialog):
         self.show_all()
 
 class ProgressDialog(Gtk.Dialog):
-    def __init__(self, parent, display_text):
-        Gtk.Dialog.__init__(self, "Work in progress", parent)
+    def __init__(self, parent, context):
+        Gtk.Dialog.__init__(self, parent)
+        self.set_title('Working...')
         self.set_modal(True)
-        self.display_text = display_text
+        #self.display_text = display_text
         self.init_components()
         self.layout_components()
 
     def init_components(self):
         self.box = self.get_content_area()
         self.progressbar = Gtk.ProgressBar()
-        self.progressbar.set_text(self.display_text)
-        self.progressbar.set_show_text(True)
+        #self.progressbar.set_text(self.display_text)
+        #self.progressbar.set_show_text(True)
 
     def layout_components(self):
-        self.set_default_size(400, 70)
+        self.set_default_size(400, -1)
         self.box.pack_start(self.progressbar, True, True, 5)
         self.box.set_border_width(10)
 
@@ -279,6 +280,10 @@ class ProxyTab(Gtk.VBox):
                 self.controls[i]['username'].set_text(data['proxy'][i]['username'])
                 self.controls[i]['password'].set_text(data['proxy'][i]['password'])
         self.same_settings.set_active(data['useSameSettings'])
+        if not data['enableProxy']:
+            self.grid.set_sensitive(False)
+        else:
+            self.grid.set_sensitive(True)
 
     def on_toggle_same_settings(self, widget):
         if not widget.get_active():

@@ -53,6 +53,7 @@ class GtkAlps(Gtk.Window):
 		self.menubar = misc.create_main_menu(self.context)
 		self.status_bar = statusbar.StatusBar(self.context, len(self.packages))
 		self.category_list = categories.Categories(self.context, self.categories, self.on_category_change)
+		self.context['category_list'] = self.category_list
 		self.package_list = packagelist.PackageList(self.context)
 		self.description = description.Description(self.context)
 
@@ -105,12 +106,12 @@ class GtkAlps(Gtk.Window):
 		self.context['process_type'] = 'unbound'
 		thread = None
 		if selection.data != 'Search Results':
-			self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+			self.modal_dialog = dialogs.ProgressDialog(self, self.context)
 			self.modal_dialog.show_all()
 			thread = threading.Thread(target=misc.download_apps, args=[category, self.context])
 		else:
 			if category != '':
-				self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+				self.modal_dialog = dialogs.ProgressDialog(self, self.context)
 				self.modal_dialog.show_all()
 				thread = threading.Thread(target=misc.search_apps, args=[self.context, self.categories['Search Results']])
 			else:
@@ -124,7 +125,7 @@ class GtkAlps(Gtk.Window):
 		self.context['process_completed'] = False
 		self.context['process_type'] = 'bound'
 		self.context['fraction'] = 0.0
-		self.modal_dialog = dialogs.ProgressDialog(self, 'Downloading...')
+		self.modal_dialog = dialogs.ProgressDialog(self, self.context)
 		self.modal_dialog.show_all()
 		thread = threading.Thread(target=misc.refresh_packages, args=[self.context, self.categories])
 		thread.start()
